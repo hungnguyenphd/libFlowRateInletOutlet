@@ -161,14 +161,15 @@ void Foam::flowRateInletOutletVelocityFvPatchVectorField::setWallDist()
 {
     const labelHashSet otherPatchIDs
     (
-        patch().patch().boundaryMesh().findPatchIDs<wallPolyPatch>()
+        this->patch().patch().boundaryMesh().findPatchIDs<wallPolyPatch>()
     ); 
 
-    //Foam::Info << "otherPatchIDs " << otherPatchIDs << endl;
+    //Foam::Info << patch().patch().name() << " otherPatchIDs " << otherPatchIDs << endl;
+    //Foam::Info << patch().patch().name() << " " << patch().patch().boundaryMesh().mesh().boundaryConnections() << endl;
     const patchPatchDist pwd(patch().patch(), otherPatchIDs);
 
     const scalarField r_(pwd/gMax(pwd));
-    Foam::Info << "max(r) " << gMax(pwd) << endl;
+    //Foam::Info << "max(r) " << gMax(pwd) << endl;
 
     y_ = 2*(1 - sqr(1-mag(r_)));
 
@@ -196,7 +197,8 @@ void Foam::flowRateInletOutletVelocityFvPatchVectorField::updateValues
 {
 
     const scalarField profile(this->y_);
-    //Foam::Info << profile << endl;
+
+    //Foam::Info << patch().patch().name() << " " << profile << endl;
 
     const scalar t = db().time().timeOutputValue();
 
@@ -212,7 +214,7 @@ void Foam::flowRateInletOutletVelocityFvPatchVectorField::updateValues
     scalarField nUp(n & Up);
 
     const scalar estimatedFlowRate = gSum(rho*(this->patch().magSf()*nUp));
-    Foam::Info << "estimatedFlowRate " << estimatedFlowRate << endl;
+    //Foam::Info << patch().patch().name() << " estimatedFlowRate " << estimatedFlowRate << endl;
 
     if (estimatedFlowRate > 0.5*flowRate)
     {
@@ -226,7 +228,7 @@ void Foam::flowRateInletOutletVelocityFvPatchVectorField::updateValues
     // Add the corrected normal component of velocity to the patch velocity
     Up = nUp*n;
     const scalar correctedFlowRate = gSum(rho*(this->patch().magSf()*(n & Up)));
-    Foam::Info << "correctedFlowRate " << correctedFlowRate << endl;
+    //Foam::Info << "correctedFlowRate " << correctedFlowRate << endl;
 
     // Correct the patch velocity
     this->operator==(Up);
@@ -277,6 +279,8 @@ void Foam::flowRateInletOutletVelocityFvPatchVectorField::write(Ostream& os) con
 {
     fvPatchField<vector>::write(os);
     flowRate_->writeData(os);
+    os.writeEntry<bool>("parabolic", parabolic_);
+
     if (!volumetric_)
     {
         os.writeEntryIfDifferent<word>("rho", "rho", rhoName_);
